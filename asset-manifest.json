@@ -1,9 +1,9 @@
 {
-  "version": "8ee42d5eae135620",
-  "generatedAt": "2026-06-18T06:48:25.673Z",
+  "version": "95caf6fa04ed36d5",
+  "generatedAt": "2026-11-09T12:23:24.501Z",
   "basePath": "/ygocarder/",
-  "assetCount": 664,
-  "totalBytes": 80269120,
+  "assetCount": 665,
+  "totalBytes": 80322733,
   "assets": {
     "/ygocarder/asset/font.css": {
       "hash": "62e6b4a8a85c0c1b",
@@ -1444,6 +1444,10 @@
     "/ygocarder/asset/image/frame/effect-border-speed-skill.png": {
       "hash": "c41eb0c61cfab2dc",
       "size": 28309
+    },
+    "/ygocarder/asset/image/frame/frame-border-dynamis.png": {
+      "hash": "471ba3c939767dc5",
+      "size": 53613
     },
     "/ygocarder/asset/image/frame/frame-border-normal.png": {
       "hash": "2708f70ee59a4dd3",
