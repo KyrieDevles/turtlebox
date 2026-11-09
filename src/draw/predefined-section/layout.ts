@@ -676,6 +676,13 @@ export const getLayoutDrawFunction = ({
             ctx.resetTransform();
             return;
         },
+        /** Dynamis exclusive side arrows. Not optional: always drawn for the Dynamis frame, on top of the art and its border. */
+        drawDynamisArrow: async () => {
+            if (!ctx || frame !== 'dynamis') return;
+            ctx.scale(globalScale, globalScale);
+            await drawAsset(ctx, 'frame/frame-border-dynamis.png', 0, 8);
+            ctx.resetTransform();
+        },
         drawNameBorder: async () => {
             if (nameBorder && ctx) {
                 ctx.scale(globalScale, globalScale);
