@@ -1,5 +1,14 @@
 import { FontData, FontGetter, FontSizeData } from 'src/model';
 
+export const cloneFontGetter = (fontGetter: FontGetter): FontGetter => {
+    const { style, family, sizeAsNumber, weight } = fontGetter.getFontInfo();
+    return createFontGetter({
+        defaultFamily: family,
+        defaultSize: sizeAsNumber,
+        defaultStyle: style,
+        defaultWeight: weight,
+    });
+};
 export const createFontGetter = (props?: {
     defaultWeight?: '' | 'bold',
     defaultStyle?: '' | 'italic' | 'small-caps',
@@ -21,15 +30,31 @@ export const createFontGetter = (props?: {
     return {
         getFont: () => `${[style, weight, size, family].filter(part => part !== '').join(' ')}, Arial`,
         getFontInfo: () => ({ style, size, family, sizeAsNumber, weight }),
-        setWeight(nextWeight) {
+        mutateWeight(nextWeight) {
             weight = nextWeight;
             return this;
         },
-        setStyle(nextStyle) {
+        setWeight(nextWeight) {
+            return createFontGetter({
+                defaultFamily: family,
+                defaultSize: size,
+                defaultStyle: style,
+                defaultWeight: nextWeight,
+            });
+        },
+        mutateStyle(nextStyle) {
             style = nextStyle;
             return this;
         },
-        setSize(nextSize) {
+        setStyle(nextStyle) {
+            return createFontGetter({
+                defaultFamily: family,
+                defaultSize: size,
+                defaultStyle: nextStyle,
+                defaultWeight: weight,
+            });
+        },
+        mutateSize(nextSize) {
             const calculatedSize = typeof nextSize === 'function'
                 ? nextSize(sizeAsNumber)
                 : nextSize;
@@ -41,9 +66,28 @@ export const createFontGetter = (props?: {
                 : parseFloat(calculatedSize.replaceAll('px', ''));
             return this;
         },
-        setFamily(nextFamily) {
+        setSize(nextSize) {
+            const calculatedSize = typeof nextSize === 'function'
+                ? nextSize(sizeAsNumber)
+                : nextSize;
+            return createFontGetter({
+                defaultFamily: family,
+                defaultSize: calculatedSize,
+                defaultStyle: style,
+                defaultWeight: weight,
+            });
+        },
+        mutateFamily(nextFamily) {
             family = nextFamily;
             return this;
+        },
+        setFamily(nextFamily) {
+            return createFontGetter({
+                defaultFamily: nextFamily,
+                defaultSize: size,
+                defaultStyle: style,
+                defaultWeight: weight,
+            });
         },
     };
 };
@@ -85,16 +129,14 @@ export const swapTextData = (
         fontData,
         fontLevel,
     } = currentTextData;
-    const nextCurrentFont = createFontGetter();
     /** We use the font list of old font, avoiding merge font because it seems unnecessary, also avoiding redo dynamic font injection */
     const combinedFontData: FontData = {
         ...nextFontData,
         fontList: [...fontData.fontList],
     };
-    nextCurrentFont
+    const nextCurrentFont = createFontGetter()
         .setSize(combinedFontData.fontList[fontLevel].fontSize)
-        .setFamily(combinedFontData.font)
-        .getFont();
+        .setFamily(combinedFontData.font);
 
     return {
         fontData: combinedFontData,

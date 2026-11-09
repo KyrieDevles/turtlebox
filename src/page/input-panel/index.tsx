@@ -6,11 +6,14 @@ import {
     NameStyleType,
     FrameInfoMap,
     FinishMap,
+    CardFormatMode,
+    getCardFormatMode,
 } from '../../model';
 import {
     Affiliation,
     AppHeader,
     IconButton,
+    ImageCropper,
     RadioTrain,
     StandaloneLabel,
     StyledPopMarkdown,
@@ -24,7 +27,7 @@ import { type NameStylePickerRef } from './name-style-picker';
 import { CheckboxTrain, FrameTrain, FrameTrainRef } from './input-train';
 import { Explanation } from 'src/component/explanation';
 import { changeCardFormat, useCard, useLanguage, useSetting } from '../../service';
-import { LayoutPicker, OpacityPickerRef } from './layout-picker';
+import { LayoutPicker, LayoutPickerRef } from './layout-picker';
 import {
     EffectInputGroup,
     EffectInputGroupRef,
@@ -56,6 +59,14 @@ import { AttributeInputGroup, AttributeInputGroupRef } from './attribute-input-g
 const NameStylePicker = lazy(() => import('./name-style-picker').then(({ NameStylePicker }) => ({ default: NameStylePicker })));
 const FormatButtonList = [
     {
+        label: '简中',
+        value: 'sc',
+        props: {
+            className: 'sc-button',
+            style: { fontWeight: 'bold' } as React.CSSProperties
+        },
+    },
+    {
         label: 'OCG',
         value: 'ocg',
         props: {
@@ -82,8 +93,9 @@ export type CardInputPanel = {
     backgroundCanvas: ImageInputGroup['receivingCanvas'],
     iconImageCanvas: ImageInputGroup['receivingCanvas'],
     overlayCanvas: ImageInputGroup['receivingCanvas'],
-} & Pick<ImageInputGroup, 'onCropChange' | 'onTainted' | 'onSourceLoaded'> & Pick<AppHeader, 'applyCardData'>;
+} & Pick<ImageCropper, 'onCropChange' | 'onTainted' | 'onSourceLoaded'> & Pick<AppHeader, 'applyCardData' | 'resetCardData'>;
 export const CardInputPanel = forwardRef<CardInputPanelRef, CardInputPanel>(({
+    resetCardData,
     applyCardData,
     artworkCanvas,
     backgroundCanvas,
@@ -97,13 +109,14 @@ export const CardInputPanel = forwardRef<CardInputPanelRef, CardInputPanel>(({
     const language = useLanguage();
     const {
         format,
+        region,
         frame, foil, finish, opacity,
         nameStyleType, nameStyle,
         getUpdater,
         setCard,
     } = useCard(useShallow(({
         card: {
-            format,
+            format, region,
             frame, foil, finish, opacity,
             nameStyleType, nameStyle,
             isLink,
@@ -111,7 +124,7 @@ export const CardInputPanel = forwardRef<CardInputPanelRef, CardInputPanel>(({
         getUpdater,
         setCard,
     }) => ({
-        format,
+        format, region,
         frame, foil, finish, opacity,
         nameStyleType, nameStyle,
         isLink,
@@ -126,12 +139,13 @@ export const CardInputPanel = forwardRef<CardInputPanelRef, CardInputPanel>(({
     const isMonster = checkMonster({ frame });
     const [stylePickerResetCount, setStylePickerResetCount] = useState(0);
     const foilButtonList = useMemo(() => getFoilButtonList(language), [language]);
+    const formatMode = getCardFormatMode(format, region);
 
     const frameTrainRef = useRef<FrameTrainRef>(null);
     const attributeInputGroupRef = useRef<AttributeInputGroupRef>(null);
     const iconInputGroupRef = useRef<IconInputGroupRef>(null);
     const imageInputGroupRef = useRef<ImageInputGroupRef>(null);
-    const layoutPickerRef = useRef<OpacityPickerRef>(null);
+    const layoutPickerRef = useRef<LayoutPickerRef>(null);
     const nameSetIdInputGroupRef = useRef<NameSetInputGroupRef>(null);
     const pendulumInputGroupRef = useRef<PendulumInputGroupRef>(null);
     const effectInputGroupRef = useRef<EffectInputGroupRef>(null);
@@ -145,7 +159,7 @@ export const CardInputPanel = forwardRef<CardInputPanelRef, CardInputPanel>(({
 
     const changeFormat = (formatValue: string | number) => {
         setCard(currentCard => {
-            const nextFormat = `${formatValue}`;
+            const nextFormat = `${formatValue}` as CardFormatMode;
             const formatSwappedCard = changeCardFormat(currentCard, nextFormat);
 
             const { name, setId, effect, typeAbility, password, creator, pendulumEffect } = formatSwappedCard;
@@ -246,13 +260,13 @@ export const CardInputPanel = forwardRef<CardInputPanelRef, CardInputPanel>(({
         className={['card-info-panel', format === 'ocg' ? 'input-ocg' : 'input-tcg'].join(' ')}
     >
         <AppHeader
+            resetCardData={resetCardData}
             applyCardData={applyCardData}
         />
-        <br />
         <Affiliation />
 
         <div className="card-overlay-input">
-            <StyledFormatRadioTrain className="format-radio" value={format} onChange={changeFormat} optionList={FormatButtonList}>
+            <StyledFormatRadioTrain className="format-radio" value={formatMode} onChange={changeFormat} optionList={FormatButtonList}>
                 <span>{language['input.format.label']}</span>
             </StyledFormatRadioTrain>
             <RadioTrain className="foil-radio" value={foil} onChange={changeFoil} optionList={foilButtonList}>
@@ -285,11 +299,13 @@ export const CardInputPanel = forwardRef<CardInputPanelRef, CardInputPanel>(({
             </label>
             <LayoutPicker ref={layoutPickerRef}
                 defaultValue={opacity}
-                receivingCanvas={backgroundCanvas}
+                backgroundReceivingCanvas={backgroundCanvas}
+                overlayReceivingCanvas={overlayCanvas}
                 onChange={changeOpacity}
                 onTainted={onTainted}
                 onCropChange={onCropChange}
                 onSourceLoaded={onSourceLoaded}
+                onFrameChange={frame => frameTrainRef.current?.changeFrame(frame)}
             />
         </div>}
 
@@ -331,14 +347,8 @@ export const CardInputPanel = forwardRef<CardInputPanelRef, CardInputPanel>(({
 
                 <PendulumInputGroup ref={pendulumInputGroupRef}
                     showCreativeOption={showCreativeOption}
-                    showExtraDecorativeOption={showExtraDecorativeOption}
                     softMode={reduceMotionColor}
-                    receivingCanvas={overlayCanvas}
-                    onTainted={onTainted}
-                    onSourceLoaded={onSourceLoaded}
-                    onCropChange={onCropChange}
                     onTakePicker={setPickerTarget}
-                    onFrameChange={frame => frameTrainRef.current?.changeFrame(frame)}
                 />
 
                 <PostPendulumInputGroup ref={postPendulumInputGroupRef} onTakePicker={setPickerTarget} />

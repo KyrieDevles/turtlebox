@@ -23,12 +23,14 @@ import { tokenizeText, getWritingDirection } from '../text-util';
 /** Sections inside effect box (stats and type) will affect the amount of line and applicable font size use for the text. */
 export const getEffectFontAndCoordinate = ({
     format,
+    fontFormat = format,
     useItalic,
     statInEffect,
     typeInEffect,
     frameType,
 }: {
     format: string,
+    fontFormat?: string,
     statInEffect: boolean,
     typeInEffect: boolean,
     useItalic: boolean,
@@ -41,14 +43,14 @@ export const getEffectFontAndCoordinate = ({
         statInEffect ? 'stat' : ''
     ].filter(entry => entry !== '').join('-');
     const fontDataKey = [
-        format,
+        fontFormat,
         ...(frameType === 'pendulumLarge' ? ['pendulumLarge'] : []),
         typeInEffect ? 'type' : '',
         statInEffect ? 'stat' : ''
     ].filter(entry => entry !== '').join('-');
 
     let fontData = EffectFontData[fontDataKey];
-    if (useItalic && format === 'tcg' && NormalFontData[fontDataKey]) {
+    if (useItalic && fontFormat === 'tcg' && NormalFontData[fontDataKey]) {
         fontData = NormalFontData[fontDataKey];
     }
 
@@ -127,7 +129,11 @@ export const drawEffect = async ({
      * 
      * If it went through every single of our font list entries, dynamic entry will be activated. It will no longer care about accuracy and just do its best to cramp all the text together. Max font entry failed when either there are too many lines, or there are too many words that is pass the condense threshold.
      * */
-    while (sizeLevel <= fontList.length && sizeLevel >= 0) {
+    /** Prevent infinite loop if we are unable to converge */
+    let loopCount = 0;
+    const maxLoop = 10;
+    while (sizeLevel <= fontList.length && sizeLevel >= 0 && loopCount < maxLoop) {
+        loopCount += 1;
         const requireDynamicSize = sizeLevel === fontList.length || lineList.length > maxFontListLineLength
             ? true
             : false;
@@ -188,9 +194,9 @@ export const drawEffect = async ({
 
         const currentFont = createFontGetter();
         ctx.font = currentFont
-            .setWeight(format === 'tcg' ? '' : '')
-            .setSize(fontSize)
-            .setFamily(dynamicFont)
+            .mutateWeight(format === 'tcg' ? '' : '')
+            .mutateSize(fontSize)
+            .mutateFamily(dynamicFont)
             .getFont();
         ctx.textAlign = 'left';
         const textData = {
@@ -229,12 +235,13 @@ export const drawEffect = async ({
         /** Usually effect only consist of 1 or 2 paragraphs, but in TCG they try to put each bullet clause in a new line, resulting many more. Still we don't know if having different tolerance based on amount of paragraph is correct or not, since it is very hard to survey the condensation of a real card. */
         const resetStyle = setTextStyle({ ctx, ...textStyle, globalScale });
         const tolerantValue = tolerancePerSentence[`${lineList.length}`] ?? tolerancePerSentence['3'];
+        const forceDraw = loopCount === maxLoop;
         if (
-            ((effectiveMedian < tolerantValue) && (sizeLevel < fontList.length))
-            || minLine > lineCount
+            !forceDraw && (((effectiveMedian < tolerantValue) && (sizeLevel < fontList.length))
+                || minLine > lineCount)
         ) {
             sizeLevel += 1; // If sizeLevel is larger than the length of font list, trigger dynamic size
-        } else if (useDynamicSize && effectiveMedian < tolerantValue) {
+        } else if (!forceDraw && useDynamicSize && effectiveMedian < tolerantValue) {
             effectiveLineCount += 1; // Increase dynamic size if the font is too condensed
         } else {
             clearCanvas(ctx);
@@ -296,8 +303,8 @@ export const drawEffect = async ({
                             : flavorFontData.fontList[appliedSizeLevel];
                         const flavorTextCurrentFont = createFontGetter();
                         ctx.font = flavorTextCurrentFont
-                            .setSize(fontSize)
-                            .setFamily(flavorFontData.font)
+                            .mutateSize(fontSize)
+                            .mutateFamily(flavorFontData.font)
                             .getFont();
                         const flavorTextData = {
                             fontData: dynamicFlavorFontData,
@@ -326,8 +333,8 @@ export const drawEffect = async ({
                         finalSpaceWidth = 0;
                         finalTextData = flavorTextData;
                         ctx.font = flavorTextCurrentFont
-                            .setSize(dynamicFontData.fontList[dynamicSizeLevel].fontSize)
-                            .setFamily(dynamicFontData.font)
+                            .mutateSize(dynamicFontData.fontList[dynamicSizeLevel].fontSize)
+                            .mutateFamily(dynamicFontData.font)
                             .getFont();
                     } else {
                         /** Normal line: Draw with the calculated median */
@@ -361,6 +368,10 @@ export const drawEffect = async ({
                     };
                 });
 
+            let persistentFlag = {
+                italic: false,
+                bold: false,
+            };
             for (const lineDrawInfo of lineDrawInfoList) {
                 const {
                     xRatio,
@@ -374,6 +385,8 @@ export const drawEffect = async ({
                 ctx.font = currentFont
                     .setSize(fontSize)
                     .setFamily(fontData.font)
+                    .setWeight(persistentFlag.bold ? 'bold' : '')
+                    .setStyle(persistentFlag.italic ? 'italic' : '')
                     .getFont();
                 if (precalculatedLine === FULL_LINE_PLACEHOLDER) {
                     ctx.scale(xRatio, yRatio);
@@ -423,10 +436,11 @@ export const drawEffect = async ({
                         option: { direction },
                     });
                 }
-                await result;
+                const awaitedResult = await result;
 
                 ctx.setTransform(1, 0, 0, 1, 0, 0);
                 trueBaseline += lineHeight;
+                persistentFlag = awaitedResult.persistentFlag;
             }
             break;
         }

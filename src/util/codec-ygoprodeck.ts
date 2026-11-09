@@ -166,7 +166,7 @@ export const ygoproDeckToYgoCarderData = (card: YgoproDeckCard): { result: Card,
         } = card;
         const normalizedIcon = reverseCardIconMap[race];
         const normalizedAttribute = reverseAttributeMap[attribute];
-        const [normalizedFrame, subFrame] = reverseFrameMap[frameType].split('_');
+        const [normalizedFrame, subFrame] = reverseFrameMap[frameType]?.split('_') ?? ['normal', undefined];
 
         /** Normal description is wrapped inside a double single quotes, we have no use for it here. */
         const normalizedMonsterEffect = (monster_desc ? monster_desc.replaceAll(/^''|''$/g, '') : undefined)
@@ -184,7 +184,7 @@ export const ygoproDeckToYgoCarderData = (card: YgoproDeckCard): { result: Card,
         const normalizedPendulumEffect = pend_desc
             ? pend_desc.replaceAll(/^''|''$/g, '')
             : '';
-        const cardImage = card_images[0].image_url_cropped;
+        const cardImage = card_images?.[0].image_url_cropped ?? '';
         const hasStat = !['spell', 'trap', 'skill'].includes(frameType);
 
         const baseCard = getEmptyCard();

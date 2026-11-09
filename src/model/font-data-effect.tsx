@@ -7,23 +7,29 @@ export type FontGetter = {
         family: string,
         weight: '' | 'bold',
     },
+    mutateWeight(nextWeight: '' | 'bold'): FontGetter,
     setWeight(nextWeight: '' | 'bold'): FontGetter,
+    mutateStyle(nextStyle: '' | 'italic' | 'small-caps'): FontGetter,
     setStyle(nextStyle: '' | 'italic' | 'small-caps'): FontGetter,
+    mutateSize(nextSize: number | `${number}px` | ((currentSize: number) => number | `${number}px`)): FontGetter,
     setSize(nextSize: number | `${number}px` | ((currentSize: number) => number | `${number}px`)): FontGetter,
+    mutateFamily(nextFamily: string): FontGetter,
     setFamily(nextFamily: string): FontGetter,
 };
-
+export type LineKey = 'high' | 'medium' | 'low' | 'origin';
+export type ActualLineHeightData = Record<LineKey | '_scale', number>;
 export type FontSizeData = {
+    actualLineHeightData?: Record<string, ActualLineHeightData>,
     allRightSymbolOffset?: number,
     bulletOffset?: number,
     bulletWidth: number,
     capitalLetterRatio?: number,
+    fontLetterOffsetMap?: Record<string, LetterOffset>,
     fontSize: number,
     headTextFontRatio?: number,
     headTextSpacing?: number,
     iconSymbolWidth?: number,
     largeSymbolRatio?: number,
-    fontLetterOffsetMap?: Record<string, LetterOffset>,
     letterSpacing?: number,
     lineCount: number,
     lineHeight: number,
@@ -56,8 +62,6 @@ export const DefaultFontSizeData = {
  * 
  * ~~So for now we can only hardcode a list of problematic letters with their correpsonding treatment. This is just baffling.~~
  * 
- * Check out `getCanvasFontDebugger` function for one of my most bullshit brute force method.
- * 
  * Because letter can combine with diacritics, we must store a base letter for them to avoid incompatible comparison.
  */
 export type FontDeviation = {
@@ -83,6 +87,7 @@ export type FontData = {
     headTextGapRatio?: number,
     headTextHeightRatio?: number,
     headTextOverflow?: 'normal' | 'condense',
+    /** Legacy usage, thereotically the new `drawFitGlyph` function should replace this */
     letterDeviationMap?: { [key: string]: FontDeviationMap },
     letterOffsetMap?: Record<string, LetterOffset>,
     metricMethod?: MetricMethod,
@@ -107,6 +112,18 @@ export type TextData = {
     fontLevel: number,
     currentFont: FontGetter,
 };
+
+export const SIMPLIFIED_CHINESE_FONT_FAMILY = '"Yu-Gi-Oh! DFKaiW5-A"';
+
+export const applySimplifiedChineseFont = (fontData: FontData, variant: string): FontData => ({
+    ...fontData,
+    alphabetFont: SIMPLIFIED_CHINESE_FONT_FAMILY,
+    font: SIMPLIFIED_CHINESE_FONT_FAMILY,
+    numberFont: SIMPLIFIED_CHINESE_FONT_FAMILY,
+    ordinalFont: SIMPLIFIED_CHINESE_FONT_FAMILY,
+    vietnameseFont: SIMPLIFIED_CHINESE_FONT_FAMILY,
+    variant,
+});
 
 const DefaultEffectFontData = {
     alphabetFont: '"Yu-Gi-Oh! DF Leisho 3"',
@@ -468,6 +485,13 @@ export const EffectFontData: Record<string, FontData> = {
         ]
     },
 };
+
+Object.entries(EffectFontData)
+    .filter(([key]) => key === 'ocg' || key.startsWith('ocg-'))
+    .forEach(([key, fontData]) => {
+        const simplifiedChineseKey = `sc${key.slice(3)}`;
+        EffectFontData[simplifiedChineseKey] = applySimplifiedChineseFont(fontData, simplifiedChineseKey);
+    });
 
 export type FontStyle = '' | 'italic' | 'small-caps';
 

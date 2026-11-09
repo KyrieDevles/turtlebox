@@ -27,6 +27,7 @@ import { getCarderDb } from './use-carder-db';
 export const decodeCard = (
     cardData: Record<string, unknown> | string | null,
     baseCard?: Card,
+    notify: boolean = true,
 ): {
     card: InternalCard,
     isPartial: boolean,
@@ -82,13 +83,13 @@ export const decodeCard = (
         console.error('decodedCard', cardData, e);
         try {
             decodedCard = legacyRebuildCardData(cardData, true) as Card;
-            notification.info({
+            if (notify) notification.info({
                 message: getLanguage()['service.decode.outdated.message'],
                 description: getLanguage()['service.decode.outdated.description'],
             });
         } catch (e) {
             console.error('cardData', cardData, e);
-            notification.error({
+            if (notify) notification.error({
                 message: getLanguage()['service.decode.error.message'],
                 description: getLanguage()['service.decode.error.description'],
             });
@@ -107,7 +108,6 @@ export const retrieveSavedCard = async (): Promise<InternalCard> => {
     try {
         const {
             card: localSavedCard,
-            version: localCardVersion,
         } = await getCardLocally() ?? {};
         const localCardData = localSavedCard
             ? migrateCardData(localSavedCard)
@@ -144,8 +144,8 @@ export const retrieveSavedCard = async (): Promise<InternalCard> => {
             if (iconImageSource === 'offline') combinedCard.iconImageData = localCardData?.iconImageData ?? '';
 
             return combinedCard;
-        } else if (localCardData !== null && localCardVersion === import.meta.env.APP_VERSION) {
-            return localCardData;
+        } else if (localCardData !== null) {
+            return migrateCardData(localCardData);
         }
         return getDefaultInternalCard();
     } catch (e) {
@@ -232,13 +232,17 @@ export const useCard = create<CardStore>((set, get) => {
             if (type === 'throttle') return throttle(returnFunction, wait);
 
             return returnFunction;
-        }
+        },
     };
 });
 
 export const getCardLocally = async (): Promise<{ version: string, card: InternalCard } | null> => {
     const db = await getCarderDb();
-    if (db) {
+    /** Without service worker to set newest card, db will always return stale card, so we rather get incomplete card info from local storage */
+    const sw = 'serviceWorker' in navigator
+        ? navigator.serviceWorker.controller
+        : null;
+    if (db && sw) {
         const cardStoreTx = db.transaction('cardStore', 'readonly');
         const latestCard = await cardStoreTx.store.get('latest');
         await cardStoreTx.done;

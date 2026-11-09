@@ -23,10 +23,12 @@ export const nextChar = (c: string) => {
     return String.fromCharCode(c.charCodeAt(0) + 1);
 };
 
-export function insertUrlParam(key: string, value: string) {
+export function insertUrlParam(paramList: { key: string, value: string }[], type: 'add' | 'replace' = 'add') {
     if (window.history.pushState) {
-        const searchParams = new URLSearchParams(window.location.search);
-        searchParams.set(key, value);
+        const searchParams = new URLSearchParams(type === 'add'
+            ? window.location.search
+            : '');
+        paramList.forEach(({ key, value }) => searchParams.set(key, value));
         const newurl = window.location.protocol
             + '//'
             + window.location.host
@@ -62,6 +64,19 @@ export const padRight = <Value extends (string | undefined | null)[]>(list: Valu
     }
 
     return nextList;
+};
+
+export function isKeyListEqual<Payload = Record<string, never>>(
+    payload1: Payload,
+    payload2: unknown,
+    keyList: (keyof Payload)[],
+) {
+    if (!payload1 || !payload2) return false;
+    if (typeof payload1 !== 'object' || typeof payload2 !== 'object') return false;
+    for (const key of keyList) {
+        if (payload1[key] !== (payload2 as Payload)[key]) return false;
+    }
+    return true;
 };
 
 export const isJsonObjectEqual = (payload1: unknown, payload2: unknown, loose = false) => {
@@ -172,4 +187,50 @@ export async function parallelLimit<T>(
 export function capitalizeFirstLetter(str: string) {
     if (!str) return ''; // Handle empty strings safely
     return str.charAt(0).toUpperCase() + str.slice(1);
+};
+
+export function updateCropRatio(
+    crop: Partial<ReactCrop.Crop>,
+    image: { width: number, height: number },
+    r: number,
+): Partial<ReactCrop.Crop> {
+    if (typeof crop.width !== 'number' || typeof crop.y !== 'number' || typeof crop.x !== 'number') {
+        return crop;
+    }
+    // The crop percentage ratio that produces the target pixel ratio r.
+    // Derivation: (w% * imgW) / (h% * imgH) = r  =>  w%/h% = r * imgH / imgW
+    const cropRatio = r * image.height / image.width;
+
+    // Try to keep width — derive height from it
+    const heightFromWidth = crop.width / cropRatio;
+    if (crop.y + heightFromWidth <= 100) {
+        return { ...crop, height: heightFromWidth };
+    }
+
+    // Try to keep y — clamp height, derive width from clamped height
+    const maxHeightFromY = 100 - crop.y;
+    const widthFromY = maxHeightFromY * cropRatio;
+    if (crop.x + widthFromY <= 100) {
+        return { ...crop, width: widthFromY, height: maxHeightFromY };
+    }
+
+    // Try to keep x — reset y to 0, fit largest possible crop from x
+    const maxWidth = 100 - crop.x;
+    const maxHeight = 100;
+    const widthFromX = Math.min(maxWidth, maxHeight * cropRatio);
+    const heightFromX = widthFromX / cropRatio;
+    return { ...crop, y: 0, width: widthFromX, height: heightFromX };
+};
+
+export const getLocalSetting = () => {
+    let setting: Record<string, unknown> = {};
+    try {
+        const cachedStore = JSON.parse(localStorage.getItem('setting') ?? '{}');
+
+        if (cachedStore && typeof cachedStore === 'object' && !Array.isArray(cachedStore)) setting = cachedStore;
+    } catch (e) {
+        console.error('useSetting: Error when getting cached setting', e);
+    }
+
+    return setting;
 };

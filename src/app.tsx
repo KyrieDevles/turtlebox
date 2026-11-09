@@ -7,6 +7,7 @@ import './reduce-color-motion.scss';
 import {
     CanvasConst,
     Card,
+    CARD_CROPPER_NAME,
     getDefaultCard,
     ImagePreset,
     ImageSourceType,
@@ -51,7 +52,7 @@ import {
 } from './service';
 import { notification, Tooltip } from 'antd';
 import { ChunkErrorBoundary, CROPPER_WIDTH, TaintedCanvasWarning } from './component';
-import { clearCanvas } from './draw';
+import { ADJUSTED_CANVAS_ID, BASE_CANVAS_ID, clearCanvas } from './draw';
 import { ZoomInOutlined, ClearOutlined, FileImageOutlined } from '@ant-design/icons';
 import {
     CardPreviewContainer,
@@ -72,12 +73,23 @@ import {
     isTouchDevice,
 } from './pwa';
 import { type LightboxRef } from './component/lightbox';
+import { TestGlyphFit } from './test-glyph-fit';
+import styled from 'styled-components';
 
 const Lightbox = lazy(() => import('./component/lightbox').then(({ Lightbox }) => ({ default: Lightbox })));
 /** React hotkey setup */
 configure({
     ignoreTags: [],
 });
+const GlyphFitBox = styled.div`
+    position: absolute;
+    z-index: 0;
+    top: 0;
+    pointer-events: none;
+    overflow: auto;
+    width: 100%;
+    visibility: hidden;
+`;
 const AppGlobalHotkeyMap = {
     EXPORT: ['ctrl+d', 'command+d'],
     IMPORT: ['ctrl+e', 'command+e'],
@@ -503,6 +515,22 @@ function App() {
         downloadButtonRef.current?.download();
     }, [allowHotkey]);
 
+    const resetCardData = useCallback(() => {
+        const consent = window.confirm(language['prompt.reset.message']);
+
+        if (consent) {
+            const { setCard, card } = useCard.getState();
+            const defaultCard = { id: card.id, ...getDefaultCard() };
+            const contextualDefaultCardData = card.format === 'tcg'
+                ? defaultCard
+                : changeCardFormat(defaultCard, 'ocg');
+
+            setCard(contextualDefaultCardData, true);
+            setImageChangeCount(cnt => cnt + 1);
+            cardInputRef.current?.forceCardData(contextualDefaultCardData);
+        }
+    }, [language]);
+
     const hotkeyHandlerMap = useMemo(() => {
         return {
             IMPORT: (event?: { preventDefault: () => void }) => importData(event, true),
@@ -513,18 +541,28 @@ function App() {
         };
     }, [downloadFromHotkey, exportData, importData, mergeData, displayLightbox]);
 
+    const taintedImageRef = useRef<Record<string, boolean>>({});
+    const checkTaintedCanvas = useCallback(() => {
+        const isTainted = Object.values(taintedImageRef.current).some(entry => {
+            return entry === true;
+        });
+        if (isTainted) setTainted(true);
+        else setTainted(false);
+    }, []);
+
     const alertDownloadError = useCallback(() => {
         setTainted(true);
         alert(language['prompt.download.tainted.message']);
     }, [language]);
 
-    const rerenderAllImage = useCallback((crossorigin?: string) => {
+    const rerenderAllImage = useCallback((name: string, crossorigin?: string) => {
         if (crossorigin === 'anonymous') {
-            setTainted(false);
+            taintedImageRef.current[name] = false;
             lightboxRef.current?.refresh();
         }
+        checkTaintedCanvas();
         setImageChangeCount(cnt => cnt + 1);
-    }, []);
+    }, [checkTaintedCanvas]);
 
     const rerenderCardImage: NonNullable<CardInputPanel['onCropChange']> = useCallback((_, sourceType) => {
         setImageChangeCount(cnt => cnt + 1);
@@ -545,22 +583,26 @@ function App() {
         rerenderCardImage(iconImageCrop, iconImageSource);
     }, [rerenderCardImage, iconImageCrop, iconImageSource, updateCanvasRenderCount]);
 
-    const markTaintedImage = useCallback(() => {
+    const markTaintedImage = useCallback((name: string) => {
         setImageChangeCount(cnt => cnt + 1);
-        setTainted(true);
-    }, []);
+        taintedImageRef.current[name] = true;
+        checkTaintedCanvas();
+    }, [checkTaintedCanvas]);
 
     const toggleManagerMode = useCallback((value: boolean) => {
         setManagerVisible(value);
     }, []);
 
     const onExportSuccess = useCallback(() => {
-        setTainted(false);
+        taintedImageRef.current[CARD_CROPPER_NAME] = false;
+        checkTaintedCanvas();
         updateCanvasData(['iconImage']);
         setDownloading(false);
-    }, [updateCanvasData]);
+    }, [checkTaintedCanvas, updateCanvasData]);
 
     const isLoading = isLanguageLoading || isInitializing || !dbReady;
+    const debugMode = 'none' as 'none' | 'glyph';
+    if (debugMode === 'glyph') return <TestGlyphFit />;
     return (
         <ChunkErrorBoundary>
             <HotKeys keyMap={AppGlobalHotkeyMap} handlers={hotkeyHandlerMap}>
@@ -628,7 +670,6 @@ function App() {
                                     <div className="imexport">
                                         <ExportPanel ref={exportPanelRef}
                                             tainted={isTainted}
-                                            artworkCanvas={artworkCanvasRef.current}
                                             onRequireExportData={exportData}
                                             onRequireDownload={() => downloadButtonRef.current?.download()}
                                             onClose={forceRefocus}
@@ -666,21 +707,7 @@ function App() {
                                     <Tooltip title={language['generic.reset.tooltip']}>
                                         <ResetButton
                                             className="reset-button"
-                                            onClick={() => {
-                                                const consent = window.confirm(language['prompt.reset.message']);
-
-                                                if (consent) {
-                                                    const { setCard, card } = useCard.getState();
-                                                    const defaultCard = { id: card.id, ...getDefaultCard() };
-                                                    const contextualDefaultCardData = card.format === 'tcg'
-                                                        ? defaultCard
-                                                        : changeCardFormat(defaultCard, 'ocg');
-
-                                                    setCard(contextualDefaultCardData, true);
-                                                    setImageChangeCount(cnt => cnt + 1);
-                                                    cardInputRef.current?.forceCardData(contextualDefaultCardData);
-                                                }
-                                            }}
+                                            onClick={resetCardData}
                                         >
                                             <ClearOutlined />
                                         </ResetButton>
@@ -694,7 +721,6 @@ function App() {
                                         </LightboxButton>
                                     </Tooltip>
                                     {/** <div id="debug-monitor" /> */}
-                                    {/** This canvas should reset everytime globalScale change so `getCanvasFontDebugger` works. */}
                                     <canvas
                                         key={globalScale + 'scale'}
                                         id="debug-canvas"
@@ -733,7 +759,7 @@ function App() {
                                         <canvas id="nameCanvas"
                                             ref={nameCanvasRef}
                                             width={CanvasWidth * globalScale}
-                                            height={148 * globalScale}
+                                            height={CanvasHeight * globalScale}
                                         />
                                         <canvas id="cardIconCanvas"
                                             ref={cardIconCanvasRef}
@@ -835,15 +861,16 @@ function App() {
                         </div>
                         {isLoading === false && <CardInputPanel
                             ref={cardInputRef}
+                            resetCardData={resetCardData}
                             applyCardData={treatNewCard}
                             artworkCanvas={artworkCanvasRef.current}
                             attributeCanvas={attributeCanvasRef.current}
                             backgroundCanvas={backgroundCanvasRef.current}
                             iconImageCanvas={iconImageCanvasRef.current}
+                            overlayCanvas={overlayCanvasRef.current}
                             onCropChange={rerenderCardImage}
                             onSourceLoaded={rerenderAllImage}
                             onTainted={markTaintedImage}
-                            overlayCanvas={overlayCanvasRef.current}
                         />}
                     </div>
                     <CardManagerPanel
@@ -878,9 +905,30 @@ function App() {
                         <FileImageOutlined /><br /><div>{language['button.far-sight.label']}</div>
                     </FarSightButton>
                     <StyledByMe className="by-me" id="hash-2">
-                        Made by Lauqerm <img src="https://i.imgur.com/RY6IRqn.png" alt="avatar" />
+                        <div className="by-name">
+                            Made by Lauqerm <img src="https://i.imgur.com/RY6IRqn.png" alt="avatar" />
+                        </div>
+                        <a href="https://www.simpleanalytics.com?utm_source=example.com&utm_content=badge" referrerPolicy="origin" target="_blank">
+                            <picture>
+                                <source
+                                    srcSet="https://simpleanalyticsbadges.com/example.com?mode=dark&counter=false&radius=1&logo=%238888aa&background=%23333333&text=%23d3d3d6"
+                                    media="(prefers-color-scheme: dark)"
+                                />
+                                <img
+                                    src="https://simpleanalyticsbadges.com/example.com?mode=dark&counter=false&radius=1&logo=%238888aa&background=%23333333&text=%23d3d3d6"
+                                    loading="lazy"
+                                    referrerPolicy="no-referrer"
+                                    crossOrigin="anonymous"
+                                />
+                            </picture>
+                        </a>
                     </StyledByMe>
+                    <GlyphFitBox>
+                        <canvas id={BASE_CANVAS_ID} />
+                        <canvas id={ADJUSTED_CANVAS_ID} />
+                    </GlyphFitBox>
                 </div>
+                {/* <div id="debug-container" /> */}
             </HotKeys>
         </ChunkErrorBoundary>
     );

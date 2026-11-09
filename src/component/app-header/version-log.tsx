@@ -2,7 +2,7 @@ import { Popover } from 'antd';
 import { memo, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { StyledPopMarkdown } from '../atom';
-import { useNotification } from 'src/service';
+import { useLanguage, useNotification } from 'src/service';
 import { VersionLogButtonLabel } from './styled';
 import { PUBLIC_PATH } from 'src/model';
 
@@ -55,6 +55,7 @@ const VersionLogStore = (() => {
     };
 })();
 export const VersionInformation = () => {
+    const language = useLanguage();
     const [log, setLog] = useState<VersionLog>([]);
     const [loading, setLoading] = useState(false);
 
@@ -68,8 +69,8 @@ export const VersionInformation = () => {
         })();
     }, []);
 
-    if (log.length === 0 && !loading) return <div>No changelogs</div>;
-    if (loading) return <div>Loading changelog...</div>;
+    if (log.length === 0 && !loading) return <div>{language['version-log.empty']}</div>;
+    if (loading) return <div>{language['version-log.loading']}</div>;
     return <div>
         {log.map(({ logList, version }, index) => {
             return <div key={`${version}-${index}`} className="log-section">
@@ -81,7 +82,7 @@ export const VersionInformation = () => {
                             <div className="content">
                                 {content}
                             </div>
-                            {image && <a target="_blank" rel="noreferrer" href={image} title="Click to open in new tab">
+                            {image && <a target="_blank" rel="noreferrer" href={image} title={language['version-log.open-image.tooltip']}>
                                 <img src={image} alt={`version-${version}-illust`} />
                             </a>}
                         </LogSentence>;
@@ -92,7 +93,7 @@ export const VersionInformation = () => {
     </div>;
 };
 
-const compareSemver = (a: string, b: string): boolean => {
+const isSemverHigher = (a: string, b: string): boolean => {
     const [majorA, minorA, patchA] = String(a).split('.').map(Number);
     const [majorB, minorB, patchB] = String(b).split('.').map(Number);
 
@@ -117,26 +118,25 @@ const StyledVersionLog = styled(StyledPopMarkdown)`
     }
 `;
 export const VersionLogButton = memo(() => {
-    const [animating, setAnimating] = useState(false);
     const [
         version,
         setMemoizedVersion,
     ] = useNotification('versionReminder');
+    const [animating, setAnimating] = useState(() => {
+        const currentSemver = import.meta.env.APP_VERSION ?? '0.0.0';
+        if (version && isSemverHigher(currentSemver, version)) {
+            return true;
+        }
+        return false;
+    });
 
     useEffect(() => {
-        if (version) {
-            const currentSemver = import.meta.env.APP_VERSION ?? '0.0.0';
-            const memoizedSemver = version;
-            if (import.meta.env.APP_VERSION) setMemoizedVersion(import.meta.env.APP_VERSION);
+        if (import.meta.env.APP_VERSION) setMemoizedVersion(import.meta.env.APP_VERSION);
 
-            if (compareSemver(currentSemver, memoizedSemver)) {
-                setAnimating(true);
-                setTimeout(() => {
-                    setAnimating(false);
-                }, 8000);
-            }
-        }
-    }, [setMemoizedVersion, version]);
+        setTimeout(() => {
+            setAnimating(false);
+        }, 8000);
+    }, [setMemoizedVersion]);
 
     return <Popover
         placement="bottom"

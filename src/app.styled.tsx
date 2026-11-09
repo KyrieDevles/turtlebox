@@ -4,15 +4,15 @@ import { CardActionButton } from './component';
 
 export const StyledDataButtonPanelContainer = styled.div`
     display: flex;
-    gap: var(--spacing);
+    gap: var(--spacing-sm);
     border-radius: var(--br-lg);
     font-size: var(--fs-4xl);
     line-height: 1.5;
     margin: auto;
     max-width: var(--card-width);
-    min-height: 59px;
+    min-height: 53px; // Alignment
     outline: none !important;   // Avoid default state styling
-    padding: var(--spacing);
+    padding: var(--spacing-sm);
     padding-right: 0;
     text-align: center;
     text-shadow: 0 1px 2px black;
@@ -80,7 +80,7 @@ export const CardPreviewContainer = styled.div`
     display: block;
     width: calc(var(--card-width) * var(--resize-ratio) * 1 / var(--global-scale));
     height: calc(var(--card-height) * var(--resize-ratio) * 1 / var(--global-scale));
-    margin: 0 var(--spacing);
+    margin: 0 var(--spacing-sm);
     .reset-button,
     .lightbox-button {
         display: none;
@@ -195,12 +195,21 @@ export const StyledByMe = styled.div`
 	right: var(--spacing);
 	bottom: 0;
 	font-size: var(--fs-xs);
-	opacity: 0.5;
-	padding: var(--spacing-px) var(--spacing-xs);
+	padding: var(--spacing-xxs) var(--spacing-xxs);
 	color: var(--color-dim);
-    img {
-        height: 10px;
-        margin-left: 1px;
+    text-align: right;
+    line-height: 2;
+    .by-name {
+	    opacity: 0.5;
+        img {
+            height: 10px;
+            margin-left: 1px;
+        }
+    }
+    picture {
+        img {
+            height: 35px;
+        }
     }
 `;
 
@@ -227,6 +236,7 @@ export const FarSightButton = styled(OverlayButton)`
     font-size: 15px;
     line-height: 18px;
     text-align: center;
+    z-index: 1001; // On top of any modal, except the preview modal
     .anticon {
         font-size: 36px;
     }

@@ -1,11 +1,11 @@
-import { FontData } from './font-data-effect';
+import { applySimplifiedChineseFont, FontData } from './font-data-effect';
 
 export type NameFontData = {
     value: string,
     labelKey: string,
     fontData: FontData,
 };
-export const NameFontDataMap: Record<'Default' | 'Arial' | 'OCG', NameFontData> = {
+const BaseNameFontDataMap: Record<'Default' | 'Arial' | 'OCG', NameFontData> = {
     Default: {
         value: 'Default',
         labelKey: 'input.name-style.font-type.default',
@@ -23,6 +23,22 @@ export const NameFontDataMap: Record<'Default' | 'Arial' | 'OCG', NameFontData> 
             arabicFontRatio: 0.75,
             variant: 'default-name',
             fontList: [{
+                actualLineHeightData: {
+                    '1': {
+                        _scale: 1,
+                        origin: 0,
+                        medium: 34,
+                        high: 45,
+                        low: -1,
+                    },
+                    '2': {
+                        _scale: 2,
+                        origin: 0,
+                        medium: 69,
+                        high: 91,
+                        low: -2,
+                    },
+                },
                 bulletWidth: 64,
                 fontSize: 91,
                 headTextFontRatio: 0.190,
@@ -32,8 +48,8 @@ export const NameFontDataMap: Record<'Default' | 'Arial' | 'OCG', NameFontData> 
                 offsetY: 0,
             }],
             letterOffsetMap: {
-                '★': { ratio: 0.55, baseline: -0.05, yRatio: 1 },
-                '☆': { ratio: 0.55, baseline: -0.05, yRatio: 1 },
+                '★': { ratio: 0.7, baseline: 0.0, edge: 0.05, yRatio: 1 },
+                '☆': { ratio: 0.7, baseline: 0.0, edge: 0.05, yRatio: 1 },
                 '¡': { ratio: 1, baseline: -0.098, edge: 0.02, yRatio: 0.58 },
             },
             letterDeviationMap: {
@@ -43,6 +59,9 @@ export const NameFontDataMap: Record<'Default' | 'Arial' | 'OCG', NameFontData> 
                         '0': { baseLetter: '0' },
                         '1': { baseLetter: '1' },
                         '2': { baseLetter: '2' },
+
+                        á: { baseLetter: 'a' },
+
                         C: { baseLetter: 'C' },
                         Ć: { baseLetter: 'C' },
                         Ĉ: { baseLetter: 'C' },
@@ -237,6 +256,7 @@ export const NameFontDataMap: Record<'Default' | 'Arial' | 'OCG', NameFontData> 
                         ᶇ: { baseLetter: 'n' },
 
                         G: { baseLetter: 'G' },
+                        g: { baseLetter: 'g' },
                     },
                 },
             },
@@ -300,5 +320,14 @@ export const NameFontDataMap: Record<'Default' | 'Arial' | 'OCG', NameFontData> 
                 offsetY: 0,
             }],
         }
+    },
+};
+
+export const NameFontDataMap: Record<'Default' | 'Arial' | 'OCG' | 'SC', NameFontData> = {
+    ...BaseNameFontDataMap,
+    SC: {
+        value: 'SC',
+        labelKey: 'input.name-style.font-type.sc',
+        fontData: applySimplifiedChineseFont(BaseNameFontDataMap.OCG.fontData, 'sc-name'),
     },
 };

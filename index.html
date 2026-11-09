@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 
 <head>
   <meta charset="utf-8" />
@@ -8,7 +8,7 @@
   <meta name="theme-color" content="#000000" />
   <meta name="description" content="Create Yu-Gi-Oh Card with better template, support both OCG and TCG cards." />
   <meta name="keywords"
-    content="YGO, ygo, Yu-Gi-Oh, yugioh, card, custom, maker, creator, TCG, tcg, OCG, ocg, webmaker, 遊☆戯☆王, 遊戯王, online, create, generator, yu-gi-oh, yugioh card maker, yugioh card creator, ygocarder, make" />
+    content="YGO, ygo, Yu-Gi-Oh, yugioh, card, custom, maker, creator, TCG, tcg, OCG, ocg, webmaker, 遊☆戯☆王, 遊戯王, 游戏王, DIY, online, create, generator, yu-gi-oh, yugioh card maker, yugioh card creator, ygocarder, make" />
   <meta name="og:image" content="/preview-image.jpg" />
   <meta name="og:title" content="Yu-Gi-Oh Carder TCG/OCG" />
   <meta name="og:description" content="Create Yu-Gi-Oh Card with better template, support both OCG and TCG cards." />
@@ -27,6 +27,21 @@
 
 <body>
   <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="js-fallback" style="display: none; padding: 40px; text-align: center; font-family: sans-serif;">
+    <h2>Something went wrong loading the app</h2>
+    <p>If you're offline, please connect to the internet and refresh this page.</p>
+    <button onclick="location.reload()">Reload</button>
+  </div>
+
+  <script>
+    // If React hasn't mounted in 5 seconds, show the fallback
+    setTimeout(() => {
+      const root = document.getElementById('root');
+      if (!root.hasChildNodes()) {
+        document.getElementById('js-fallback').style.display = 'block';
+      }
+    }, 5000);
+  </script>
   <!-- 100% privacy-first analytics -->
   <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
   <div id="root"></div>

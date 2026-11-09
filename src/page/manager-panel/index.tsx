@@ -1,12 +1,11 @@
-import { Button, Dropdown, Input, Menu, Modal, notification, Tooltip } from 'antd';
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { cardListToMse, csvToCardList, LanguageDataDictionary, SortFunctionMap, useCardList, useSetting } from 'src/service';
+import { Button, Dropdown, Input, Menu, Modal, notification } from 'antd';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useState } from 'react';
+import { LanguageDataDictionary, mseDataToDownloadable, SortFunctionMap, useCardList, useSetting } from 'src/service';
 import styled from 'styled-components';
 import { ManagerCardList } from './card-list';
 import { useShallow } from 'zustand/react/shallow';
 import {
     DownloadOutlined,
-    UploadOutlined,
     CloseOutlined,
     UnorderedListOutlined,
     LoadingOutlined,
@@ -18,12 +17,13 @@ import { downloadBlob, ygoCarderToTextData } from 'src/util';
 import { ExportFormatList, InternalCard } from 'src/model';
 import { ManagerSample } from './manager-sample';
 import debounce from 'lodash.debounce';
-import { ManagerDrawer } from 'src/component';
+import { ManagerDrawer, RecommendedLabel } from 'src/component';
 import { captureException } from 'src/util';
 import copy from 'copy-to-clipboard';
+import { ManagerUploadPanel } from './upload-panel';
 
 const StyledConvertMenu = styled(Menu)`
-    width: 225px;
+    width: 260px;
 `;
 const StyledCardManagerPanel = styled.div`
     position: absolute;
@@ -41,9 +41,6 @@ const StyledCardManagerDrawer = styled(ManagerDrawer)`
         padding: var(--spacing-sm) var(--spacing-sm) 0 var(--spacing-sm);
         .manager-button {
             cursor: pointer;
-            input {
-                display: none;
-            }
             &:hover {
                 color: var(--main-active);
                 .anticon {
@@ -102,8 +99,6 @@ export const CardManagerPanel = forwardRef(({
     onSelect,
     onRequestImport,
 }: CardManagerPanel, ref: React.ForwardedRef<CardManagerPanelRef>) => {
-    const listUploadId = 'list-upload-id';
-    const listUploadRef = useRef<HTMLInputElement>(null);
     const {
         listName,
         cardList,
@@ -146,7 +141,6 @@ export const CardManagerPanel = forwardRef(({
     })));
     const exportFormat = useSetting(state => state.setting.exportFormat);
     const [inputKey, setInputKey] = useState(0);
-    const [readingFile, setReadingFile] = useState(false);
     const [savingFile, setSavingFile] = useState(false);
     const debounceSearch = debounce((e: React.ChangeEvent<HTMLInputElement>) => {
         setFilterFunction({ type: 'text', value: e.target.value });
@@ -166,22 +160,7 @@ export const CardManagerPanel = forwardRef(({
             } = cardListToCsv(useCardList.getState().cardList);
 
             if (error) {
-                let errorMessage = '';
-                let errorDescription = '';
-                switch (error) {
-                    case 'offline-data': {
-                        errorMessage = language['error.export.offline-data.message'];
-                        errorDescription = language['error.export.offline-data.description'];
-                        break;
-                    }
-                }
-
-                if (errorMessage || errorDescription) {
-                    notification.error({
-                        message: errorMessage,
-                        description: errorDescription,
-                    });
-                }
+                throw new Error(error);
             }
             switch (type) {
                 case 'xlsx': {
@@ -199,53 +178,36 @@ export const CardManagerPanel = forwardRef(({
                 }
             }
             changeEditStatus('download');
-        } catch (e) {
-            await captureException(e);
+        } catch (error) {
+            await captureException(error);
+            const errorType = typeof error === 'string' ? error : `${error.message}`;
+            let errorMessage = '';
+            let errorDescription = '';
+            if (errorType === 'offline-data') {
+                errorMessage = language['error.export.offline-data.message'];
+                errorDescription = language['error.export.offline-data.description'];
+            } else if (errorType.includes('Text length must not exceed')) {
+                errorMessage = language['error.export.too-long.message'];
+                errorDescription = language['error.export.too-long.description'];
+            }
+
+            if (errorMessage || errorDescription) {
+                notification.error({
+                    message: errorMessage,
+                    description: errorDescription,
+                });
+            }
         }
         setSavingFile(false);
     };
     const convertToMse = async () => {
         setSavingFile(true);
-        const debugMode = true;
-
         try {
-            const {
-                error,
-                set,
-                imageList,
-            } = await cardListToMse(useCardList.getState().cardList);
-
-            if (error) {
-                let errorMessage = '';
-                let errorDescription = '';
-                switch (error) {
-                    case 'offline-data': {
-                        errorMessage = language['error.export.offline-data.message'];
-                        errorDescription = language['error.export.offline-data.description'];
-                        break;
-                    }
-                }
-
-                if (errorMessage || errorDescription) {
-                    notification.error({
-                        message: errorMessage,
-                        description: errorDescription,
-                    });
-                }
-            }
-            const JSZip = (await import('jszip')).default;
-            const zipObject = new JSZip();
-            zipObject.file('set' + (debugMode ? '.txt' : ''), set);
-            imageList.forEach(({ blob, name }) => {
-                zipObject.file(name + (debugMode ? '.png' : ''), blob);
-            });
-            const zipBlob = await zipObject.generateAsync({
-                type: 'blob',
-            });
+            const { name, blob, type } = await mseDataToDownloadable(useCardList.getState().cardList);
             downloadBlob(
-                'convert-result' + (debugMode ? '.zip' : '.mse-set'),
-                zipBlob,
-                'application/zip',
+                name,
+                blob,
+                type,
             );
             changeEditStatus('download');
         } catch (e) {
@@ -311,7 +273,7 @@ export const CardManagerPanel = forwardRef(({
                 visible,
             });
         },
-    }), []);
+    }));
 
     return <StyledCardManagerPanel>
         <Modal
@@ -397,20 +359,20 @@ export const CardManagerPanel = forwardRef(({
                         // visible={true}
                         overlay={<StyledConvertMenu className="convert-menu">
                             <Menu.ItemGroup title={<div>
-                                {language['manager.header.button.convert.tooltip']}
+                                <b>{language['manager.header.button.convert.tooltip']}</b>
                                 <br />
                                 <small><i>{language['manager.header.button.convert.alert']}</i></small>
                             </div>}>
                                 {[
                                     {
                                         value: 'mse',
-                                        label: 'Magic Set Editor',
+                                        label: language['manager.header.button.convert.mse.label'],
                                         converter: convertToMse,
-                                        active: false,
+                                        active: true,
                                     },
                                     {
                                         value: 'text',
-                                        label: 'Raw text',
+                                        label: language['manager.header.button.convert.raw-text.label'],
                                         converter: convertToText,
                                         active: true,
                                     },
@@ -432,13 +394,13 @@ export const CardManagerPanel = forwardRef(({
                     <Dropdown
                         overlay={<StyledConvertMenu className="convert-menu">
                             <Menu.ItemGroup title={<div>
-                                {language['manager.header.button.download.tooltip']}
+                                <b>{language['manager.header.button.download.tooltip']}</b>
                                 <br />
                                 <small><i>{language['prompt.remind.backup.label']}</i></small>
                             </div>}>
-                                {ExportFormatList.map(({ value, label }) => {
+                                {ExportFormatList.map(({ value, label, recommended }) => {
                                     return <Menu.Item key={value} onClick={async () => await downloadList(value)}>
-                                        {label}
+                                        {label}{recommended ? <RecommendedLabel /> : null}
                                     </Menu.Item>;
                                 })}
                             </Menu.ItemGroup>
@@ -450,79 +412,12 @@ export const CardManagerPanel = forwardRef(({
                             {savingFile ? <LoadingOutlined /> : <DownloadOutlined />}
                         </div>
                     </Dropdown>
-                    <Tooltip key={`${readingFile}`} overlay={language['manager.header.button.upload.tooltip']}>
-                        <div
-                            className="manager-button"
-                            onClick={() => {
-                                const target = document.getElementById(listUploadId);
-                                if (target && !readingFile) {
-                                    target.click();
-                                }
-                            }}
-                        >
-                            <input key={`upload-${inputKey}`} ref={listUploadRef}
-                                type="file"
-                                id={listUploadId}
-                                accept={[
-                                    '.csv',
-                                    'application/vnd.ms-excel',
-                                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                                ].join(',')}
-                                className="import-upload-input"
-                                onChange={async () => {
-                                    const fileList = listUploadRef.current?.files;
-                                    const { isListDirty } = useCardList.getState();
-                                    const announceError = () => {
-                                        setInputKey(cnt => cnt + 1);
-                                        setReadingFile(false);
-                                        notification.error({
-                                            message: language['error.csv-import.message'],
-                                            description: language['error.csv-import.description'],
-                                        });
-                                    };
-                                    let willImport = true;
-
-                                    if (isListDirty) {
-                                        willImport = window.confirm(language['prompt.warning.on-import.label']);
-                                    }
-                                    if (willImport && fileList && fileList[0]) {
-                                        setReadingFile(true);
-                                        try {
-                                            const file = await fileList[0].arrayBuffer();
-                                            const fileName = fileList[0].name.replace(/\.[^/.]+$/, '');
-
-                                            /** Assume data from only the very first sheet */
-                                            /** 65001 codepage allow display unicode characters such as Japanese */
-                                            const XLSX = await import('xlsx');
-                                            const workbook = XLSX.read(file, { codepage: 65001 });
-                                            const csvBook = XLSX.utils.sheet_to_json<string[]>(
-                                                workbook.Sheets[workbook.SheetNames[0]],
-                                                { header: 1, raw: false },
-                                            );
-                                            const nextCardList = csvToCardList(csvBook);
-
-                                            if (nextCardList.length > 0) {
-                                                setCardList(nextCardList, nextCardList[0].id);
-                                                setListName(fileName);
-                                                setInputKey(cnt => cnt + 1);
-                                                onSelect(nextCardList[0]);
-                                                setReadingFile(false);
-                                            } else {
-                                                announceError();
-                                            }
-                                        } catch (e) {
-                                            console.error(e);
-                                            announceError();
-                                        }
-                                    } else {
-                                        setInputKey(cnt => cnt + 1);
-                                        setReadingFile(false);
-                                    }
-                                }}
-                            />
-                            {readingFile ? <LoadingOutlined /> : <UploadOutlined />}
-                        </div>
-                    </Tooltip>
+                    <ManagerUploadPanel
+                        language={language}
+                        inputKey={inputKey}
+                        setInputKey={setInputKey}
+                        onSelect={onSelect}
+                    />
                     <div
                         className="manager-button close-button"
                         onClick={() => toggleVisible(false)}

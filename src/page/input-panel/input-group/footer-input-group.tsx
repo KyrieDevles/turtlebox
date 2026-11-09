@@ -9,7 +9,7 @@ import { useShallow } from 'zustand/react/shallow';
 import styled from 'styled-components';
 import { StyledInputLabelWithButton } from '../input-panel.styled';
 import { Checkbox, Dropdown, Menu, Tooltip } from 'antd';
-import { Card, copyrightMap, editionList, FlagIndexMap, CheckboxChangeEvent, NO_STICKER, PUBLIC_PATH, StickerList } from 'src/model';
+import { Card, copyrightMap, editionList, FlagIndexMap, CheckboxChangeEvent, getCardFormatMode, NO_STICKER, PUBLIC_PATH, StickerList } from 'src/model';
 
 const StickerButtonList = StickerList.map(({ value }) => ({
     label: value === NO_STICKER
@@ -84,12 +84,13 @@ export const FooterInputGroup = forwardRef<FooterInputGroupRef, FooterInputGroup
     const {
         autoLinkRating,
         format,
+        region,
         hasCornerText,
         isFirstEdition,
         isLegacyCard,
         isLink,
         linkRating,
-        linkRatingDisplayMode,
+        linkRatingBehavior,
         showDefAndLink,
         sticker,
         getUpdater,
@@ -99,6 +100,7 @@ export const FooterInputGroup = forwardRef<FooterInputGroupRef, FooterInputGroup
             isLegacyCard,
             sticker,
             format,
+            region,
             flag,
             isLink,
             linkRating,
@@ -111,12 +113,13 @@ export const FooterInputGroup = forwardRef<FooterInputGroupRef, FooterInputGroup
     }) => ({
         autoLinkRating: linkMap.length,
         format,
+        region,
         hasCornerText,
         isFirstEdition,
         isLegacyCard,
         isLink,
         linkRating,
-        linkRatingDisplayMode: flag[FlagIndexMap['linkRating']],
+        linkRatingBehavior: flag[FlagIndexMap['linkRatingBehavior']],
         showDefAndLink: flag[FlagIndexMap['showDefAndLink']] === 1,
         sticker,
         getUpdater,
@@ -131,13 +134,14 @@ export const FooterInputGroup = forwardRef<FooterInputGroupRef, FooterInputGroup
     const cornerTextRef = useRef<CardTextInputRef>(null);
 
     const showAtkInput = true;
-    const showLinkInput = checkDiplayLinkRating(linkRatingDisplayMode, isLink);
+    const showLinkInput = checkDiplayLinkRating(linkRatingBehavior, isLink);
     const showDefInput = showLinkInput
         ? showDefAndLink
         : true;
     const showPadding = [showAtkInput, showDefInput, showLinkInput].filter(entry => entry === true).length % 2 === 1;
-    const copyrightList = (format && copyrightMap[format as keyof typeof copyrightMap])
-        ? copyrightMap[format as keyof typeof copyrightMap]
+    const formatMode = getCardFormatMode(format, region);
+    const copyrightList = copyrightMap[formatMode]
+        ? copyrightMap[formatMode]
         : copyrightMap.tcg;
 
     const changeATK = useMemo(() => getUpdater('atk', value => typeof value === 'string' ? value : value), [getUpdater]);
@@ -300,7 +304,7 @@ export const FooterInputGroup = forwardRef<FooterInputGroupRef, FooterInputGroup
             onChange={changeCreator}
             onTakePicker={onTakePicker}
         />
-        <CardTextInput ref={firstEditionTextRef}
+        {formatMode !== 'sc' && <CardTextInput ref={firstEditionTextRef}
             id="firstEditionText"
             className="first-edition-text"
             addonBefore={<StyledInputLabelWithButton className="input-label-with-button">
@@ -338,7 +342,7 @@ export const FooterInputGroup = forwardRef<FooterInputGroupRef, FooterInputGroup
             defaultValue={useCard.getState().card.firstEditionText}
             onChange={changeFirstEditionText}
             onTakePicker={onTakePicker}
-        />
+        />}
         <CardTextInput ref={cornerTextRef}
             id="cornerText"
             className="corner-text"

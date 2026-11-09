@@ -4,9 +4,10 @@ import {
     DEFAULT_TEXT_COLOR,
     Foil,
     frameList,
-    LINK_RATING_ALWAYS_AUTO,
-    LINK_RATING_ALWAYS_HIDE,
-    LINK_RATING_ALWAYS_SHOW,
+    getCardFormatMode,
+    LINK_RATING_BEHAVIOR_ALWAYS_AUTO,
+    LINK_RATING_BEHAVIOR_ALWAYS_HIDE,
+    LINK_RATING_BEHAVIOR_ALWAYS_SHOW,
     NameStyle,
     NameStyleType,
     PresetNameStyleMap,
@@ -68,9 +69,9 @@ export const checkLightFrame = (frame: string) => {
 export const checkDiplayLinkRating = (displayMode: number, isLink: boolean | null) => {
     let showLinkRating = false;
     switch (displayMode) {
-        case LINK_RATING_ALWAYS_SHOW: showLinkRating = true; break;
-        case LINK_RATING_ALWAYS_HIDE: showLinkRating = false; break;
-        case LINK_RATING_ALWAYS_AUTO: showLinkRating = isLink ?? false; break;
+        case LINK_RATING_BEHAVIOR_ALWAYS_SHOW: showLinkRating = true; break;
+        case LINK_RATING_BEHAVIOR_ALWAYS_HIDE: showLinkRating = false; break;
+        case LINK_RATING_BEHAVIOR_ALWAYS_AUTO: showLinkRating = isLink ?? false; break;
     }
 
     return showLinkRating;
@@ -114,6 +115,7 @@ export const resolveFrameStyle = (frameData: Record<string, string | undefined>,
 
 export const resolveNameStyle = ({
     format,
+    region,
     frame,
     nameStyle,
     nameStyleType,
@@ -123,10 +125,14 @@ export const resolveNameStyle = ({
     nameStyle: Partial<NameStyle>,
     frame: string,
     format: string,
+    region?: string,
     foil: Foil,
 }) => {
     const isSpeedSkill = checkSpeedSkill({ frame });
-    let contextualFont = nameStyleType === 'auto' ? AUTO_FONT : nameStyle.font;
+    const formatMode = getCardFormatMode(format, region ?? '');
+    let contextualFont = formatMode === 'sc'
+        ? 'SC'
+        : nameStyleType === 'auto' ? AUTO_FONT : nameStyle.font;
     if (contextualFont === AUTO_FONT && format === 'ocg') contextualFont = 'OCG';
     if (contextualFont === AUTO_FONT && format === 'tcg') contextualFont = 'Default';
     if (contextualFont === AUTO_FONT && isSpeedSkill && format === 'tcg') contextualFont = 'Arial';
@@ -152,7 +158,9 @@ export const resolveNameStyle = ({
         return {
             ...contextualColor,
             ...resultNameStyle,
-            font: resultNameStyle.font === AUTO_FONT ? contextualFont : resultNameStyle.font,
+            font: formatMode === 'sc'
+                ? 'SC'
+                : resultNameStyle.font === AUTO_FONT ? contextualFont : resultNameStyle.font,
         };
     }
 
@@ -174,5 +182,6 @@ export const resolveNameStyle = ({
         ...contextualOutline,
         ...foilStyle,
         ...frameStyle,
+        ...(formatMode === 'sc' ? { font: 'SC' } : {}),
     };
 };

@@ -5,9 +5,9 @@ import { ArrowRightOutlined, ArrowUpOutlined, CloseOutlined, DownloadOutlined, F
 import { Loading } from '../loading';
 import { IconButton } from '../icon-button';
 import { useGlobal, useLanguage } from 'src/service';
-import { mergeClass } from 'src/util';
+import { captureException, mergeClass } from 'src/util';
 import { DropZone } from '../atom';
-import { ImageSourceType, ImageStyle, PUBLIC_PATH } from 'src/model';
+import { ImageSourceType, ImageStyle, isUsingProxy, PUBLIC_PATH, toBaseUrl, toProxiedUrl } from 'src/model';
 import { CROPPER_WIDTH } from './model';
 import 'react-image-crop/dist/ReactCrop.css';
 import './image-cropper.scss';
@@ -107,8 +107,9 @@ export type ImageCropperRef = {
     hasImage: () => boolean,
     forceSource: (type: ImageSourceType, artLinkOrData: string, cropInfo: Partial<ReactCrop.Crop>) => void,
     getSource: () => ({ type: ImageSourceType, image: string, imageData: string, crop: Partial<ReactCrop.Crop> }),
-}
+};
 export type ImageCropper = {
+    cropperName?: string,
     title?: React.ReactNode,
     backgroundColor?: string,
     className?: string,
@@ -127,13 +128,14 @@ export type ImageCropper = {
     isNotFoundAnError?: boolean,
     onImageStyleChange: (style: ImageStyle) => void,
     onSourceChange?: (sourceType: ImageSourceType, source: string, byUser?: boolean) => void,
-    onSourceLoaded?: (crossorigin?: string, byUser?: boolean) => void,
+    onSourceLoaded?: (name: string, crossorigin?: string, byUser?: boolean) => void,
     onCropChange?: (cropInfo: Partial<ReactCrop.Crop>, sourceType: ImageSourceType, byUser?: boolean) => void,
-    onTainted: () => void,
+    onTainted: (name: string) => void,
     onMaxSizeExceeded: (size: number) => void,
     onForceFitChange?: (status: boolean) => void,
-}
+};
 export const ImageCropper = forwardRef<ImageCropperRef, ImageCropper>(({
+    cropperName = 'default',
     title,
     backgroundColor,
     className,
@@ -157,6 +159,7 @@ export const ImageCropper = forwardRef<ImageCropperRef, ImageCropper>(({
     onMaxSizeExceeded = () => { },
     onForceFitChange = () => { },
 }: ImageCropper, forwardedRef) => {
+    const [isProxyAvailable, setProxyAvailable] = useGlobal('isProxyAvailable');
     const normalizedDefaultSource = defaultSourceType === 'offline'
         ? 'offline'
         : 'online';
@@ -189,7 +192,7 @@ export const ImageCropper = forwardRef<ImageCropperRef, ImageCropper>(({
 
     const applyOfflineSource = (fileList: FileList) => {
         const targetFile = fileList[0];
-        if (!targetFile) return;
+        if (!targetFile || !targetFile.type.includes('image')) return;
         const maxFileSize = 16;
 
         if (targetFile.size >= maxFileSize * 1024 * 1024) {
@@ -217,7 +220,7 @@ export const ImageCropper = forwardRef<ImageCropperRef, ImageCropper>(({
     const onLoad = useCallback((img: HTMLImageElement) => {
         setLoading(false);
         setError(null);
-        onSourceLoaded(crossorigin, interacted);
+        onSourceLoaded(cropperName, crossorigin, interacted);
         imgRef.current = img;
         /** @todo Check if we really need timeout delay here */
         if (img.src === pendingCrop.current.source && pendingCrop.current.crop) {
@@ -549,7 +552,7 @@ export const ImageCropper = forwardRef<ImageCropperRef, ImageCropper>(({
                     <div className={['card-image-input', inputMode === 'offline' ? '' : 'input-inactive'].join(' ')}>
                         <Input ref={fileInputRef}
                             type="file"
-                            accept="image/*"
+                            accept="image/*,application/octet-stream"
                             onChange={e => {
                                 if (e.target.files && e.target.files.length > 0) {
                                     applyOfflineSource(e.target.files);
@@ -703,7 +706,7 @@ export const ImageCropper = forwardRef<ImageCropperRef, ImageCropper>(({
                             };
                             setLoading(false);
                             setError('No receiving canvas');
-                            onTainted();
+                            onTainted(cropperName);
                         }
                         else if (
                             (sourceType === 'online' && (externalSource ?? '') === '')
@@ -718,12 +721,19 @@ export const ImageCropper = forwardRef<ImageCropperRef, ImageCropper>(({
 
                             ctx?.clearRect(0, 0, width, height);
                             if (completedCrop) onCropChange(completedCrop, sourceType, interacted);
-                            onSourceLoaded(crossorigin, interacted);
+                            onSourceLoaded(cropperName, crossorigin, interacted);
                             setLoading(false);
                             setError('Image not found');
+                        } else if (isUsingProxy(externalSource) && isProxyAvailable) {
+                            setExternalSource(toBaseUrl(externalSource));
+                            setProxyAvailable(false);
+                        } else if (isProxyAvailable) {
+                            setCrossOrigin('anonymous');
+                            setExternalSource(toProxiedUrl(externalSource));
                         } else {
+                            captureException('Failed proxy', { extra: { externalSource } });
                             setCrossOrigin(undefined);
-                            onTainted();
+                            onTainted(cropperName);
                         }
                         if (crossorigin === undefined) {
                             setLoading(false);

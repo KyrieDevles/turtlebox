@@ -99,7 +99,7 @@ export const getDefaultYgoproDeckCard = () => ({
     archetype: 'Dark Magician',
     ygoprodeck_url: 'https://ygoprodeck.com/card/dark-magician-4003',
     card_sets: [] as YgoproDeckCardSet[] | undefined,
-    card_images: [] as YgoproDeckCardImage[],
+    card_images: [] as undefined | (YgoproDeckCardImage[]),
     card_prices: [
         {
             cardmarket_price: '0.02',
@@ -142,6 +142,10 @@ export const getDefaultMseCard = () => ({
     pendulum_text: 'Balogar',
     gamecode: '01',
     rarity: 'ultra rare',
+    pendulum: 'none',
+    number: '',
+    edition: '',
+    copyright: '',
 });
 
 export type MseFile = ReturnType<typeof getDefaultMseFile>;

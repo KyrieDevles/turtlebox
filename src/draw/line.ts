@@ -134,6 +134,10 @@ export const drawLine = async ({
         ? trueEdge + width
         : trueEdge;
     let preformatMode = false;
+    const persistentFlag = {
+        italic: false,
+        bold: false,
+    };
 
     const tokenList = direction === 'rtl'
         ? bidirectionArrange(baseTokenList, debug)
@@ -210,10 +214,9 @@ export const drawLine = async ({
             currentFont = currentTextData.currentFont;
             currentFontData = currentTextData.fontData;
             fontSizeData = currentFontData.fontList[fontLevel];
-            textWorker = getTextWorker(ctx, currentFontData, fontSizeData, currentFont, globalScale);
-            ctx.font = currentFont
-                .setStyle('italic')
-                .getFont();
+            textWorker = getTextWorker(ctx, currentFontData, fontSizeData, currentTextData.currentFont, globalScale);
+            persistentFlag.italic = true;
+            ctx.font = currentTextData.currentFont.setStyle('italic').getFont();
             continue;
         } else if (potentialTaggedToken === ITALIC_CLOSE_TAG) {
             currentTextData = textData;
@@ -221,20 +224,17 @@ export const drawLine = async ({
             currentFontData = currentTextData.fontData;
             fontSizeData = currentFontData.fontList[fontLevel];
             textWorker = getTextWorker(ctx, currentFontData, fontSizeData, currentFont, globalScale);
-            ctx.font = currentFont
-                .setStyle('')
-                .getFont();
+            persistentFlag.italic = false;
+            ctx.font = currentFont.setStyle('').getFont();
             continue;
         }
         if (potentialTaggedToken === BOLD_OPEN_TAG) {
-            ctx.font = currentTextData.currentFont
-                .setWeight('bold')
-                .getFont();
+            persistentFlag.bold = true;
+            ctx.font = currentFont.setWeight('bold').getFont();
             continue;
         } else if (potentialTaggedToken === BOLD_CLOSE_TAG) {
-            ctx.font = currentTextData.currentFont
-                .setWeight('')
-                .getFont();
+            persistentFlag.bold = false;
+            ctx.font = currentFont.setWeight('').getFont();
             continue;
         }
         if (potentialTaggedToken === PRE_OPEN_TAG) {
@@ -835,5 +835,6 @@ export const drawLine = async ({
     return {
         tokenEdge,
         iconPositionList,
+        persistentFlag,
     };
 };

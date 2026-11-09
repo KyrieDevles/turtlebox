@@ -36,7 +36,10 @@ export const getDefaultIconCrop = () => ({
 export const getDefaultCoordinateMap = (): Record<keyof typeof MoveableRegionMap, string | undefined> => ({
     effectBox: compileCoordinate(CanvasConst.effectBox),
     starBox: compileCoordinate(CanvasConst.starBox),
+    nameBox: compileCoordinate(CanvasConst.nameBox),
 });
+
+export type Series = 'modern' | 'classic';
 
 /**
  * Check following things when adding new attributes:
@@ -49,7 +52,8 @@ export const getDefaultCoordinateMap = (): Record<keyof typeof MoveableRegionMap
  */
 export type Card = ReturnType<typeof getDefaultCard>;
 export const getDefaultCard = () => ({
-    version: 2,
+    version: 3,
+    series: 'modern' as Series,
     format: 'tcg',
     region: 'en',
     frame: 'fusion',
@@ -175,6 +179,7 @@ export const getDefaultInternalCard = () => ({
 
 export const getEmptyCard = (): Card => ({
     version: 3,
+    series: 'modern' as Series,
     format: 'tcg',
     region: 'en',
     /** Why we split frame and left frame here? Because there is more nuance to the card other than individual frames, for example name bevel, border bevel, effect bevel etc..., so "frame" here is a kind of "main frame" that dictates all those nuance, why the actual card background is constructed from those 4 corner frames. */
@@ -360,10 +365,24 @@ export const ExportFormatList = [
     {
         value: 'csv' as const,
         label: '.csv',
+        recommended: true,
     },
     {
         value: 'xlsx' as const,
         label: '.xlsx',
+        recommended: false,
+    },
+];
+
+export type ImportFormat = typeof ImportFormatList[0]['value'];
+export const ImportFormatList = [
+    {
+        value: 'list' as const,
+        label: '.csv / .xlsx',
+    },
+    {
+        value: 'json' as const,
+        label: '.json',
     },
 ];
 

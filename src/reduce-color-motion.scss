@@ -48,9 +48,8 @@
     .standalone-addon {
         --main-active: #7272ff;
     }
-    .card-info-panel .pendulum-frame-input {
-        .card-layout-preview-container,
-        .pendulum-frame-label {
+    .card-info-panel .frame-blend-input {
+        .card-layout-preview-container {
             border-color: var(--main-level-4);
         }
         .pendulum-frame-info-block {

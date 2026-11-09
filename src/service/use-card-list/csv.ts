@@ -33,6 +33,7 @@ import {
     OtherFinish,
     PendulumSize,
     PresetNameStyle,
+    Series,
 } from 'src/model';
 import { v4 as uuid } from 'uuid';
 
@@ -69,6 +70,7 @@ const CsvStandardFieldList = [
     'Link - Bottom Arrow',
     'Link - Bottom Right Arrow',
     /** More detailed stuffs */
+    'Series',
     'First Edition Text',
     'Is First Edition',
     'Is Speed Card',
@@ -313,6 +315,12 @@ export const cardListToCsv = (cardList: Card[]) => {
             furiganaHelper,
             hasBackground,
             hasCornerText,
+            iconImage,
+            iconImageCrop,
+            iconImageData,
+            iconImageFit,
+            iconImageSource,
+            iconImageStyle,
             isDuelTerminalCard,
             isFirstEdition,
             isLegacyCard,
@@ -348,15 +356,10 @@ export const cardListToCsv = (cardList: Card[]) => {
             pendulumTextStyle,
             region,
             rightFrame,
+            series,
             setId,
             star,
             starAlignment,
-            iconImage,
-            iconImageCrop,
-            iconImageData,
-            iconImageFit,
-            iconImageSource,
-            iconImageStyle,
             starList,
             statTextStyle,
             sticker,
@@ -400,6 +403,7 @@ export const cardListToCsv = (cardList: Card[]) => {
         write('Link - Bottom Left Arrow', linkMap.includes('7'));
         write('Link - Bottom Arrow', linkMap.includes('8'));
         write('Link - Bottom Right Arrow', linkMap.includes('9'));
+        write('Series', series);
         write('Link Rating', linkRating);
         write('First Edition Text', firstEditionText);
         write('Is First Edition', isFirstEdition);
@@ -634,10 +638,13 @@ export const csvToCardList = (data: (string | undefined)[][]): InternalCard[] =>
                 const foil = FoilMap[rawFoil] ? rawFoil : 'normal';
 
                 const rawAttribute = reader('Attribute')?.toUpperCase();
+                const attributeType = reader('Attribute Type')?.toLowerCase();
                 const emptyAttributeCrop = getDefaultIconCrop();
                 const attributeImage = reader('Attribute Link') ?? emptyCard.attributeImage;
                 const attributeImageData = reader('Attribute Data') ?? emptyCard.attributeImageData;
-                const attributeImageSource = (reader('Attribute Source') ?? emptyCard.attributeImageSource) as AttributeType;
+                const attributeImageSource = (reader('Attribute Source')
+                    ?? (attributeType === 'custom' ? 'online' : attributeType) // Legacy
+                    ?? emptyCard.attributeImageSource) as AttributeType;
                 const attributeImageFit = normalizeBoolean(reader('Is Using Full Attribute'), emptyCard.attributeImageFit);
                 const attributeImageCrop: Crop = {
                     aspect: 1,
@@ -653,15 +660,15 @@ export const csvToCardList = (data: (string | undefined)[][]): InternalCard[] =>
                 } catch (e) {
                     console.error('csvToCardList', e);
                 }
-                const attribute = attributeImageSource === 'auto'
-                    ? frame === 'spell'
-                        ? 'SPELL'
-                        : frame === 'trap'
-                            ? 'TRAP'
-                            : frame === 'speed-skill'
-                                ? NO_ATTRIBUTE
-                                : emptyCard.attribute
-                    : rawAttribute ?? NO_ATTRIBUTE;
+                let attribute = rawAttribute ?? NO_ATTRIBUTE;
+                if (attributeImageSource === 'auto') {
+                    switch (frame) {
+                        case 'spell': attribute = 'SPELL'; break;
+                        case 'trap': attribute = 'TRAP'; break;
+                        case 'speed-skill': attribute = 'NO_ATTRIBUTE'; break;
+                    }
+                    attribute = !rawAttribute || rawAttribute === '' ? NO_ATTRIBUTE : rawAttribute;
+                }
 
                 const artFinish = (reader('Art Finish') ?? (reader('Art_Finish') ? `type${reader('Art_Finish')}` : ''));
                 const finishAttribute = reader('Other Finish - Attribute') ?? '';
@@ -675,6 +682,7 @@ export const csvToCardList = (data: (string | undefined)[][]): InternalCard[] =>
                 const effect = reader('Effect') ?? '';
                 const finish = reader('Card Finish')?.split(/,| /).filter(entry => entry !== '') ?? [] as string[];
                 const format = (reader('Format') ?? emptyCard.format).toLowerCase();
+                const series = (reader('Series') ?? emptyCard.series).toLowerCase() as Series;
                 const region = (reader('Region') ?? emptyCard.region).toLowerCase();
                 const legacyTemplate = normalizeBoolean(reader('Legacy Template'), emptyCard.legacyTemplate);
                 const furiganaHelper = normalizeBoolean(reader('Use Furigana Helper'), emptyCard.furiganaHelper);
@@ -1037,10 +1045,11 @@ export const csvToCardList = (data: (string | undefined)[][]): InternalCard[] =>
                     pendulumTextStyle,
                     region,
                     rightFrame,
+                    series,
                     setId,
                     star,
-                    starList,
                     starAlignment,
+                    starList,
                     statTextStyle,
                     sticker,
                     subFamily,
