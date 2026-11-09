@@ -1,5 +1,84 @@
 [
     {
+        "version": "v2.6.2 (2026/10/23)",
+        "logList": [
+            {
+                "content": "Feat: Experimental feature to allow adjusting the size and position of the card name in Card Layout option."
+            }
+        ]
+    },
+    {
+        "version": "v2.6.1 (2026/09/19)",
+        "logList": [
+            {
+                "content": "Fix: Incorrect gradient alignment in card name."
+            },
+            {
+                "content": "Feat: Minor UI updates and restructure."
+            },
+            {
+                "content": "Feat: Adding an expand icon in the symbol box for more exotic ones (±, △, or Ω)."
+            },
+            {
+                "content": "Feat: Allow importing individual JSON files into the manager."
+            },
+            {
+                "content": "Fix: Incorrect behavior when user try to export card on mobile."
+            }
+        ]
+    },
+    {
+        "version": "v2.6.0 (2026/07/18)",
+        "logList": [
+            {
+                "content": "Feat: Support UI and font adjustment for simplified Chinese, thanks to @amarillonmc."
+            }
+        ]
+    },
+    {
+        "version": "v2.5.9 (2026/07/08)",
+        "logList": [
+            {
+                "content": "Feat: Allow putting card name, stars and link markers below card image in boudless mode."
+            }
+        ]
+    },
+    {
+        "version": "v2.5.8 (2026/07/01)",
+        "logList": [
+            {
+                "content": "Fix: Various inconsistent issues."
+            }
+        ]
+    },
+    {
+        "version": "v2.5.7 (2026/06/20)",
+        "logList": [
+            {
+                "content": "Feat: Experimental export function for Magic Set Editor's format (series 10 template)."
+            },
+            {
+                "content": "Fix: Attempt to fix issue that cannot export card artwork in YGOPro format."
+            }
+        ]
+    },
+    {
+        "version": "v2.5.6 (2026/06/19)",
+        "logList": [
+            {
+                "content": "Fix: Attributes do not display correctly when importing card list."
+            }
+        ]
+    },
+    {
+        "version": "v2.5.5 (2026/06/18)",
+        "logList": [
+            {
+                "content": "Feat: Experimental feature to overlay boundless artwork above card name and stars."
+            }
+        ]
+    },
+    {
         "version": "v2.5.4 (2026/06/16)",
         "logList": [
             {

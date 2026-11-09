@@ -1,9 +1,9 @@
 {
-  "version": "95caf6fa04ed36d5",
-  "generatedAt": "2026-11-09T12:23:24.501Z",
+  "version": "a95b9d777469e399",
+  "generatedAt": "2026-11-09T16:20:53.961Z",
   "basePath": "/ygocarder/",
-  "assetCount": 665,
-  "totalBytes": 80322733,
+  "assetCount": 668,
+  "totalBytes": 102959288,
   "assets": {
     "/ygocarder/asset/font.css": {
       "hash": "62e6b4a8a85c0c1b",
@@ -45,6 +45,10 @@
       "hash": "0fc956c16f859f11",
       "size": 13804
     },
+    "/ygocarder/asset/font/README-SIMPLIFIED-CHINESE.md": {
+      "hash": "86ecdbc430842f80",
+      "size": 606
+    },
     "/ygocarder/asset/font/RoGSanSrfStd-Bd.otf": {
       "hash": "e7c93ff7251c4ccc",
       "size": 1353880
@@ -64,6 +68,10 @@
     "/ygocarder/asset/font/Yu-Gi-Oh! DF Leisho 3.ttf": {
       "hash": "01a2ce067b2cdc4a",
       "size": 4602972
+    },
+    "/ygocarder/asset/font/Yu-Gi-Oh-DFKaiW5-A-SC.ttf": {
+      "hash": "e0bf94b8bdbf5b90",
+      "size": 22584284
     },
     "/ygocarder/asset/font/YuGiOhITCStoneSerifBSc.ttf": {
       "hash": "8a3554dce048cafb",
@@ -110,20 +118,24 @@
       "size": 24764
     },
     "/ygocarder/asset/i18n/eng.json": {
-      "hash": "9ee76756d9806ff1",
-      "size": 41811
+      "hash": "19d7cd4915ec019f",
+      "size": 44924
     },
     "/ygocarder/asset/i18n/jap.json": {
-      "hash": "dda0a52cd7b6e576",
-      "size": 49841
+      "hash": "456eb60927e97527",
+      "size": 51141
     },
     "/ygocarder/asset/i18n/metadata.json": {
-      "hash": "e26cc553ebb866b3",
-      "size": 1034
+      "hash": "dd119469b1f7eb47",
+      "size": 1406
     },
     "/ygocarder/asset/i18n/vie.json": {
-      "hash": "ac61598527245ad3",
-      "size": 48041
+      "hash": "b3065b9482f7b8bf",
+      "size": 49169
+    },
+    "/ygocarder/asset/i18n/zhs.json": {
+      "hash": "7fc4a7ec3fb709d4",
+      "size": 43147
     },
     "/ygocarder/asset/image/attribute/attr-ch-dark.png": {
       "hash": "4bdad1239b4dd115",
@@ -2654,12 +2666,12 @@
       "size": 198
     },
     "/ygocarder/asset/log/version.json": {
-      "hash": "9c0909228661874f",
-      "size": 28838
+      "hash": "6164d596335564cb",
+      "size": 31200
     },
     "/ygocarder/asset/ocg-font.css": {
-      "hash": "cda77ad46b5c9af7",
-      "size": 723
+      "hash": "828be84ec77a5e4a",
+      "size": 966
     },
     "/ygocarder/asset/script/JSONCrush.min.js": {
       "hash": "5747c2d8a975f968",
