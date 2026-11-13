@@ -28,9 +28,9 @@ export const FrameInfoMap: Record<string, FrameInfo> = {
         sortWeight: 85,
         isOfficial: false,
     },
-    'gear': {
-        name: 'gear',
-        nameKey: 'input.frame.gear',
+    'genesis': {
+        name: 'genesis',
+        nameKey: 'input.frame.genesis',
         labelColor: '#ffffff',
         edition: 'fanmade',
         labelBackgroundColor: '#8a8f96',
