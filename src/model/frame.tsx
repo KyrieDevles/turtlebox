@@ -28,6 +28,15 @@ export const FrameInfoMap: Record<string, FrameInfo> = {
         sortWeight: 85,
         isOfficial: false,
     },
+    'gear': {
+        name: 'gear',
+        nameKey: 'input.frame.gear',
+        labelColor: '#ffffff',
+        edition: 'fanmade',
+        labelBackgroundColor: '#8a8f96',
+        sortWeight: 84,
+        isOfficial: false,
+    },
     'effect': {
         name: 'effect',
         nameKey: 'input.frame.effect',
