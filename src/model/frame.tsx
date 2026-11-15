@@ -33,7 +33,7 @@ export const FrameInfoMap: Record<string, FrameInfo> = {
         nameKey: 'input.frame.genesis',
         labelColor: '#ffffff',
         edition: 'fanmade',
-        labelBackgroundColor: '#8a8f96',
+        labelBackgroundColor: '#3f9a4a',
         sortWeight: 84,
         isOfficial: false,
     },
