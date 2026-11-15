@@ -1,0 +1,3 @@
+const __vite__mapDeps=(i,m=__vite__mapDeps,d=(m.f||(m.f=["assets/esm-Fg4GZkvV.js","assets/rolldown-runtime-CMxvf4Kt.js","assets/index-CKAM7gbl.js","assets/other-B7o5-Cnd.js","assets/atom-B-ZyYOFm.js","assets/vendor-moveable-DpLvMExi.js","assets/toString-D7t7Vkk0.js","assets/model-DcUYIs3s.js","assets/index-DqoFRNWI.css"])))=>i.map(i=>d[i]);
+import{d as e}from"./other-B7o5-Cnd.js";var t=async(t,n)=>(await e(()=>import(`./esm-Fg4GZkvV.js`),__vite__mapDeps([0,1,2,3,4,5,6,7,8])),t&&(t.style.display=`none`),!1);export{t as setupSentry};
+//# sourceMappingURL=sentry-D0UVB_I6.js.map

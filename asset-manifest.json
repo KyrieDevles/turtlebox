@@ -1,9 +1,9 @@
 {
-  "version": "6fc55c91a77cbd9f",
-  "generatedAt": "2026-11-13T06:49:16.034Z",
+  "version": "5459bbfab02762ae",
+  "generatedAt": "2026-11-15T06:28:33.837Z",
   "basePath": "/ygocarder/",
   "assetCount": 671,
-  "totalBytes": 103998312,
+  "totalBytes": 104863189,
   "assets": {
     "/ygocarder/asset/font.css": {
       "hash": "62e6b4a8a85c0c1b",
@@ -490,8 +490,8 @@
       "size": 54098
     },
     "/ygocarder/asset/image/background/background-name-genesis.png": {
-      "hash": "7eeac65df8e299d9",
-      "size": 49710
+      "hash": "1f7514142f590ca8",
+      "size": 127448
     },
     "/ygocarder/asset/image/background/background-name-hamon.png": {
       "hash": "0696917012286b8b",
@@ -674,8 +674,8 @@
       "size": 115201
     },
     "/ygocarder/asset/image/background/background-text-genesis.png": {
-      "hash": "bde30cb75c74094a",
-      "size": 68431
+      "hash": "da0d0d29b91af8e9",
+      "size": 138591
     },
     "/ygocarder/asset/image/background/background-text-hamon.png": {
       "hash": "2e3de7f7b8c97e26",
@@ -1506,8 +1506,8 @@
       "size": 316420
     },
     "/ygocarder/asset/image/frame/frame-genesis.png": {
-      "hash": "2a68699e177ffa76",
-      "size": 920841
+      "hash": "8fd707be0c6e0774",
+      "size": 1637820
     },
     "/ygocarder/asset/image/frame/frame-hamon.png": {
       "hash": "065250b137af365e",
